@@ -70,7 +70,7 @@ def setup(args):
     config = CONFIGS[args.model_type]
     model = VisionTransformer(config, args.img_size, zero_head=True, 
                               num_classes=args.num_classes, msa_layer=args.msa_layer)
-    model.load_from(np.load(args.pretrained_dir))
+    # model.load_from(np.load(args.pretrained_dir))
     num_params = count_parameters(model)
 
     logger.info("{}".format(config))
@@ -354,10 +354,11 @@ def main():
                         help="Loss scaling to improve fp16 numeric stability. Only used when fp16 set to True.\n"
                              "0 (default value): dynamic loss scaling.\n"
                              "Positive power of 2: static loss scaling value.\n")
+    parser.add_argument('--device', type=str, default='cpu')
     args = parser.parse_args()
 
     # Setup CUDA, GPU & distributed training
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = args.device
     args.n_gpu = torch.cuda.device_count()
     args.device = device
 
