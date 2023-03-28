@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import argparse
+import time
 import os
 import math
 import random
@@ -70,7 +71,8 @@ def setup(args):
     config = CONFIGS[args.model_type]
     model = VisionTransformer(config, args.img_size, zero_head=True, 
                               num_classes=args.num_classes, msa_layer=args.msa_layer)
-    # model.load_from(np.load(args.pretrained_dir))
+    if args.pretrained_dir:
+        model.load_from(np.load(args.pretrained_dir))
     num_params = count_parameters(model)
 
     logger.info("{}".format(config))
@@ -155,7 +157,7 @@ def valid(args, model, ad_net, writer, test_loader, global_step):
 def train(args, model):
     if args.local_rank in [-1, 0]:
         os.makedirs(os.path.join(args.output_dir, args.dataset), exist_ok=True)
-        writer = SummaryWriter(log_dir=os.path.join("logs", args.dataset, args.name))
+        writer = SummaryWriter(log_dir=os.path.join("logs", args.dataset, args.name, time.strftime("%Y%m%d-%H%M%S")))
 
     args.train_batch_size = args.train_batch_size // args.gradient_accumulation_steps
 
@@ -193,13 +195,22 @@ def train(args, model):
                                 momentum=0.9,
                                 weight_decay=args.weight_decay)
     
+    # optimizer = torch.optim.SGD(
+        # list(ad_net.parameters()) + list(ad_net_local.parameters()) + list(model.parameters()),
+        # lr=args.learning_rate/5,
+        # momentum=0.9,
+        # weight_decay=args.weight_decay
+    # )
+    
     t_total = args.num_steps
     if args.decay_type == "cosine":
         scheduler = WarmupCosineSchedule(optimizer, warmup_steps=args.warmup_steps, t_total=t_total)
-        scheduler_ad = WarmupCosineSchedule(optimizer_ad, warmup_steps=args.warmup_steps, t_total=t_total)
+        try:    scheduler_ad = WarmupCosineSchedule(optimizer_ad, warmup_steps=args.warmup_steps, t_total=t_total)
+        except: pass
     else:
         scheduler = WarmupLinearSchedule(optimizer, warmup_steps=args.warmup_steps, t_total=t_total)
-        scheduler_ad = WarmupLinearSchedule(optimizer_ad, warmup_steps=args.warmup_steps, t_total=t_total)
+        try:    scheduler_ad = WarmupLinearSchedule(optimizer_ad, warmup_steps=args.warmup_steps, t_total=t_total)
+        except: pass
         
     model.zero_grad()
     ad_net.zero_grad()
@@ -248,11 +259,15 @@ def train(args, model):
         
         optimizer.step()
         optimizer.zero_grad()
-        scheduler.step()
+        try:    scheduler.step()
+        except: pass
         
-        optimizer_ad.step()
-        optimizer_ad.zero_grad()
-        scheduler_ad.step()
+        try:
+            optimizer_ad.step()
+            optimizer_ad.zero_grad()
+        except: pass
+        try:    scheduler_ad.step()
+        except: pass
         
         if args.local_rank in [-1, 0]:
             writer.add_scalar("train/loss", scalar_value=loss.item(), global_step=global_step)
@@ -261,7 +276,9 @@ def train(args, model):
             writer.add_scalar("train/loss_ad_local", scalar_value=loss_ad_local.item(), global_step=global_step)
             writer.add_scalar("train/loss_rec", scalar_value=loss_rec.item(), global_step=global_step)
             writer.add_scalar("train/loss_im", scalar_value=loss_im.item(), global_step=global_step)
-            writer.add_scalar("train/lr", scalar_value=scheduler.get_last_lr()[0], global_step=global_step)
+            try:
+                writer.add_scalar("train/lr", scalar_value=scheduler.get_last_lr()[0], global_step=global_step)
+            except: pass
         
         if global_step % args.eval_every == 0 and args.local_rank in [-1, 0]:
             accuracy, classWise_acc = valid(args, model, ad_net_local, writer, test_loader, global_step)
@@ -298,7 +315,7 @@ def main():
                                                  "ViT-L_32", "ViT-H_14", "R50-ViT-B_16"],
                         default="ViT-B_16",
                         help="Which variant to use.")
-    parser.add_argument("--pretrained_dir", type=str, default="checkpoint/ViT-B_16.npz",
+    parser.add_argument("--pretrained_dir", type=str, default=None,
                         help="Where to search for pretrained ViT models.")
     parser.add_argument("--output_dir", default="output", type=str,
                         help="The output directory where checkpoints will be written.")
