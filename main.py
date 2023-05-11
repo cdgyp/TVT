@@ -28,7 +28,8 @@ from utils.transform import get_transform
 from utils.utils import visda_acc
 
 from torchvision import transforms, datasets
-from data.data_list_image import ImageList, ImageListIndex, rgb_loader
+from data.data_list_image import ImageList, ImageListIndex, rgb_loader, ImageFolderIndex
+from torchvision.datasets import ImageFolder
 from models import lossZoo
 
 logger = logging.getLogger(__name__)
@@ -164,15 +165,21 @@ def train(args, model):
     # Prepare dataset
     transform_source, transform_target, transform_test = get_transform(args.dataset, args.img_size)
     source_loader = torch.utils.data.DataLoader(
-        ImageList(open(args.source_list).readlines(), transform=transform_source, mode='RGB'),
+        ImageList(open(args.source_list).readlines(), transform=transform_source, mode='RGB') \
+            if not args.image_folder_dataset else\
+        ImageFolder(args.source_list, transform=transform_source),
         batch_size=args.train_batch_size, shuffle=True, num_workers=4)
     
     target_loader = torch.utils.data.DataLoader(
-        ImageListIndex(open(args.target_list).readlines(), transform=transform_target, mode='RGB'),
+        ImageListIndex(open(args.target_list).readlines(), transform=transform_target, mode='RGB') \
+            if not args.image_folder_dataset else\
+        ImageFolderIndex(args.target_list, transform=transform_target),
         batch_size=args.train_batch_size, shuffle=True, num_workers=4)
 
     test_loader = torch.utils.data.DataLoader(
-        ImageList(open(args.test_list).readlines(), transform=transform_test, mode='RGB'),
+        ImageList(open(args.test_list).readlines(), transform=transform_test, mode='RGB')\
+            if not args.image_folder_dataset else\
+        ImageFolder(args.test_list, transform=transform_test),
         batch_size=args.eval_batch_size, shuffle=False, num_workers=4)
     
     config = CONFIGS[args.model_type]
@@ -306,6 +313,7 @@ def main():
     parser.add_argument("--name", required=True,
                         help="Name of this run. Used for monitoring.")
     parser.add_argument("--dataset", help="Which downstream task.")
+    parser.add_argument("--image_folder_dataset", action="store_true", help="Whether to use ImageFolder datasets")
     parser.add_argument("--source_list", help="Path of the training data.")
     parser.add_argument("--target_list", help="Path of the test data.")
     parser.add_argument("--test_list", help="Path of the test data.")
