@@ -1,5 +1,6 @@
-data
+__MACOSX
 logs
 ***/__pycache__
 output
 ._data
+data/.DS_Store
