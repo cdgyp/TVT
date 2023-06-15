@@ -18,8 +18,8 @@ from torch.nn import CrossEntropyLoss, Dropout, Softmax, Linear, Conv2d, LayerNo
 from torch.nn.modules.utils import _pair
 from scipy import ndimage
 
-import models.configs as configs
-import models.lossZoo as lossZoo 
+
+from . import configs, lossZoo
 
 from .modeling_resnet import ResNetV2
 

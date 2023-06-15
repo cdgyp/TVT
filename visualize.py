@@ -11,8 +11,8 @@ from urllib.request import urlretrieve
 
 from PIL import Image
 from torchvision import transforms
-from models.modeling import VisionTransformer, CONFIGS, AdversarialNetwork
-from data.data_list_image import Normalize
+from .models.modeling import VisionTransformer, CONFIGS, AdversarialNetwork
+from .data.data_list_image import Normalize
 
 
 def rgb_loader(path):

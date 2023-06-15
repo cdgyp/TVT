@@ -20,17 +20,17 @@ from torch.utils.tensorboard import SummaryWriter
 from apex import amp
 from apex.parallel import DistributedDataParallel as DDP
 
-from models.modeling import VisionTransformer, CONFIGS, AdversarialNetwork
-from utils.scheduler import WarmupLinearSchedule, WarmupCosineSchedule
-from utils.data_utils import get_loader
-from utils.dist_util import get_world_size
-from utils.transform import get_transform
-from utils.utils import visda_acc
+from .models.modeling import VisionTransformer, CONFIGS, AdversarialNetwork
+from .utils.scheduler import WarmupLinearSchedule, WarmupCosineSchedule
+from .utils.data_utils import get_loader
+from .utils.dist_util import get_world_size
+from .utils.transform import get_transform
+from .utils.utils import visda_acc
 
 from torchvision import transforms, datasets
-from data.data_list_image import ImageList, ImageListIndex, rgb_loader, ImageFolderIndex
+from .data.data_list_image import ImageList, ImageListIndex, rgb_loader, ImageFolderIndex
 from torchvision.datasets import ImageFolder
-from models import lossZoo
+from .models import lossZoo
 
 logger = logging.getLogger(__name__)
 

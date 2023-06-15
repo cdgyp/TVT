@@ -1,7 +1,7 @@
 # coding=utf-8
 from __future__ import absolute_import, division, print_function
 from torchvision import transforms
-from data.data_list_image import Normalize
+from ..data.data_list_image import Normalize
 
 def get_transform(dataset, img_size):
     if dataset in ['svhn2mnist', 'usps2mnist', 'mnist2usps']:
